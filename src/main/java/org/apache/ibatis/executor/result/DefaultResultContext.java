@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.apache.ibatis.executor.result;
 import org.apache.ibatis.session.ResultContext;
 
 /**
+ * 默认结果上下文
+ *
  * @author Clinton Begin
  */
 public class DefaultResultContext<T> implements ResultContext<T> {
@@ -47,6 +49,7 @@ public class DefaultResultContext<T> implements ResultContext<T> {
     return stopped;
   }
 
+  //应该是每次调用nextResultObject这个方法，这样内部count就加1
   public void nextResultObject(T resultObject) {
     resultCount++;
     this.resultObject = resultObject;

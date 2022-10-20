@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,10 +15,6 @@
  */
 package org.apache.ibatis.executor.statement;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.ExecutorException;
@@ -33,7 +29,13 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 /**
+ * 语句处理器的基类
+ *
  * @author Clinton Begin
  */
 public abstract class BaseStatementHandler implements StatementHandler {
@@ -66,7 +68,9 @@ public abstract class BaseStatementHandler implements StatementHandler {
 
     this.boundSql = boundSql;
 
+    //生成parameterHandler
     this.parameterHandler = configuration.newParameterHandler(mappedStatement, parameterObject, boundSql);
+    //生成resultSetHandler
     this.resultSetHandler = configuration.newResultSetHandler(executor, mappedStatement, rowBounds, parameterHandler, resultHandler, boundSql);
   }
 
@@ -80,13 +84,17 @@ public abstract class BaseStatementHandler implements StatementHandler {
     return parameterHandler;
   }
 
+  //准备语句
   @Override
   public Statement prepare(Connection connection, Integer transactionTimeout) throws SQLException {
     ErrorContext.instance().sql(boundSql.getSql());
     Statement statement = null;
     try {
+      //实例化Statement
       statement = instantiateStatement(connection);
+      //设置超时
       setStatementTimeout(statement, transactionTimeout);
+      //设置读取条数
       setFetchSize(statement);
       return statement;
     } catch (SQLException e) {
@@ -98,8 +106,10 @@ public abstract class BaseStatementHandler implements StatementHandler {
     }
   }
 
+  //如何实例化Statement，交给子类做
   protected abstract Statement instantiateStatement(Connection connection) throws SQLException;
 
+  //设置超时,其实就是调用Statement.setQueryTimeout
   protected void setStatementTimeout(Statement stmt, Integer transactionTimeout) throws SQLException {
     Integer queryTimeout = null;
     if (mappedStatement.getTimeout() != null) {
@@ -113,6 +123,7 @@ public abstract class BaseStatementHandler implements StatementHandler {
     StatementUtil.applyTransactionTimeout(stmt, queryTimeout, transactionTimeout);
   }
 
+  //设置读取条数,其实就是调用Statement.setFetchSize
   protected void setFetchSize(Statement stmt) throws SQLException {
     Integer fetchSize = mappedStatement.getFetchSize();
     if (fetchSize != null) {
@@ -125,6 +136,7 @@ public abstract class BaseStatementHandler implements StatementHandler {
     }
   }
 
+  //关闭语句
   protected void closeStatement(Statement statement) {
     try {
       if (statement != null) {
@@ -135,6 +147,7 @@ public abstract class BaseStatementHandler implements StatementHandler {
     }
   }
 
+  //生成key
   protected void generateKeys(Object parameter) {
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     ErrorContext.instance().store();

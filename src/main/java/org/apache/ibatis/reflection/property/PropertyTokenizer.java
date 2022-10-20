@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,24 +18,31 @@ package org.apache.ibatis.reflection.property;
 import java.util.Iterator;
 
 /**
+ * 属性分词器：属性分解为标记，迭代子模式
+ * 如person[0].birthdate.year，将依次取得person[0], birthdate, year
  * @author Clinton Begin
  */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
-  private String name;
-  private final String indexedName;
-  private String index;
-  private final String children;
+  //例子： person[0].birthdate.year
+  private String name;//person
+  private final String indexedName;//person[0]
+  private String index;//0
+  private final String children; //birthdate.year
 
+  //例如：fullname=person[0].birthdate.year
   public PropertyTokenizer(String fullname) {
+    //找'.'
     int delim = fullname.indexOf('.');
     if (delim > -1) {
-      name = fullname.substring(0, delim);
+      name = fullname.substring(0, delim);//person[0]
       children = fullname.substring(delim + 1);
     } else {
+      //找不到'.'的话，取全部部分
       name = fullname;
       children = null;
     }
     indexedName = name;
+    //把中括号里的数字给解析出来
     delim = name.indexOf('[');
     if (delim > -1) {
       index = name.substring(delim + 1, name.length() - 1);
@@ -64,6 +71,7 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
     return children != null;
   }
 
+  //取得下一个,非常简单，直接再通过children来new另外一个PropertyTokenizer
   @Override
   public PropertyTokenizer next() {
     return new PropertyTokenizer(children);

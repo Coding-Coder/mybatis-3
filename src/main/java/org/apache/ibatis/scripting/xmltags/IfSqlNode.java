@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * if SQL节点
+ *
  * @author Clinton Begin
  */
 public class IfSqlNode implements SqlNode {
@@ -31,6 +33,7 @@ public class IfSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    //如果满足条件，则apply，并返回true
     if (evaluator.evaluateBoolean(test, context.getBindings())) {
       contents.apply(context);
       return true;

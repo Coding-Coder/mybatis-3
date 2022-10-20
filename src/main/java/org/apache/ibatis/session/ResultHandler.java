@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 package org.apache.ibatis.session;
 
 /**
+ * 结果处理器
+ *
  * @author Clinton Begin
  */
 public interface ResultHandler<T> {
 
+  //处理结果，给一个结果上下文
   void handleResult(ResultContext<? extends T> resultContext);
 
 }

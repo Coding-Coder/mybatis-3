@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,19 +15,6 @@
  */
 package org.apache.ibatis.executor.loader;
 
-import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.BaseExecutor;
 import org.apache.ibatis.executor.BatchResult;
@@ -41,14 +28,27 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.sql.SQLException;
+import java.util.*;
+
 /**
+ * 结果延迟加载器映射
+ *
  * @author Clinton Begin
  * @author Franta Mejta
  */
 public class ResultLoaderMap {
 
+  //加载对的HashMap
   private final Map<String, LoadPair> loaderMap = new HashMap<>();
 
+  //把要延迟加载的属性记到ResultLoaderMap里（一个哈希表）
   public void addLoader(String property, MetaObject metaResultObject, ResultLoader resultLoader) {
     String upperFirst = getUppercaseFirstProperty(property);
     if (!upperFirst.equalsIgnoreCase(property) && loaderMap.containsKey(upperFirst)) {
@@ -75,9 +75,12 @@ public class ResultLoaderMap {
     return loaderMap.containsKey(property.toUpperCase(Locale.ENGLISH));
   }
 
+  // 懒加载只会触发一次，无论成功还是失败
   public boolean load(String property) throws SQLException {
+	  //先删除key，防止第二次又去查数据库就不对了
     LoadPair pair = loaderMap.remove(property.toUpperCase(Locale.ENGLISH));
     if (pair != null) {
+      //去数据库查
       pair.load();
       return true;
     }
@@ -102,6 +105,8 @@ public class ResultLoaderMap {
   }
 
   /**
+   * 加载对(静态内部类):用于准备加载环境
+   *
    * Property which was not loaded yet.
    */
   public static class LoadPair implements Serializable {
@@ -120,6 +125,7 @@ public class ResultLoaderMap {
      */
     private transient MetaObject metaResultObject;
     /**
+     * 装载器
      * Result loader which loads unread properties.
      */
     private transient ResultLoader resultLoader;
@@ -136,6 +142,7 @@ public class ResultLoaderMap {
      */
     private String property;
     /**
+     * SQL语句
      * ID of SQL statement which loads the property.
      */
     private String mappedStatement;
@@ -185,13 +192,14 @@ public class ResultLoaderMap {
     }
 
     public void load(final Object userObject) throws SQLException {
+      // 准备懒加载的环境：如果是反序列化后这2个字段可能为空
       if (this.metaResultObject == null || this.resultLoader == null) {
         if (this.mappedParameter == null) {
           throw new ExecutorException("Property [" + this.property + "] cannot be loaded because "
                   + "required parameter of mapped statement ["
                   + this.mappedStatement + "] is not serializable.");
         }
-
+        // 此时获取Configuration（配置信息）
         final Configuration config = this.getConfiguration();
         final MappedStatement ms = config.getMappedStatement(this.mappedStatement);
         if (ms == null) {
@@ -215,7 +223,7 @@ public class ResultLoaderMap {
         this.resultLoader = new ResultLoader(old.configuration, new ClosedExecutor(), old.mappedStatement,
                 old.parameterObject, old.targetType, old.cacheKey, old.boundSql);
       }
-
+      // 通过this.resultLoader.loadResult()获取值，然后设置值
       this.metaResultObject.setValue(property, this.resultLoader.loadResult());
     }
 

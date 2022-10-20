@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,12 +15,6 @@
  */
 package org.apache.ibatis.executor;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.logging.Log;
@@ -31,7 +25,15 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.List;
+
 /**
+ * 简单执行器
+ *
  * @author Clinton Begin
  */
 public class SimpleExecutor extends BaseExecutor {
@@ -45,8 +47,12 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      //新建一个StatementHandler
+      //这里看到ResultHandler传入的是null
       StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
+      //准备语句
       stmt = prepareStatement(handler, ms.getStatementLog());
+      //StatementHandler.update
       return handler.update(stmt);
     } finally {
       closeStatement(stmt);
@@ -58,10 +64,15 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      //新建一个StatementHandler(sql语句预处理器)
+      //这里看到ResultHandler传入了
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+      //准备语句
       stmt = prepareStatement(handler, ms.getStatementLog());
+      //StatementHandler.query
       return handler.query(stmt, resultHandler);
     } finally {
+      // 关闭StatementHandler
       closeStatement(stmt);
     }
   }
@@ -78,13 +89,17 @@ public class SimpleExecutor extends BaseExecutor {
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) {
+    //doFlushStatements只是给batch用的，所以这里返回空
     return Collections.emptyList();
   }
 
+  //创建Statement并设置参数
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
     Connection connection = getConnection(statementLog);
+    //调用StatementHandler.prepare创建Statement
     stmt = handler.prepare(connection, transaction.getTimeout());
+    //调用StatementHandler.parameterize设置参数
     handler.parameterize(stmt);
     return stmt;
   }

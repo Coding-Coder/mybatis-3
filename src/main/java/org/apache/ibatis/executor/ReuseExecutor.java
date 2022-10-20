@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,6 @@
  */
 package org.apache.ibatis.executor;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.logging.Log;
@@ -33,11 +25,22 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
+ * 可重用的执行器
+ *
  * @author Clinton Begin
  */
 public class ReuseExecutor extends BaseExecutor {
 
+  //可重用的执行器内部用了一个map，用来缓存SQL语句对应的Statement
   private final Map<String, Statement> statementMap = new HashMap<>();
 
   public ReuseExecutor(Configuration configuration, Transaction transaction) {
@@ -47,7 +50,10 @@ public class ReuseExecutor extends BaseExecutor {
   @Override
   public int doUpdate(MappedStatement ms, Object parameter) throws SQLException {
     Configuration configuration = ms.getConfiguration();
+    //和SimpleExecutor一样，新建一个StatementHandler
+    //这里看到ResultHandler传入的是null
     StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
+    //准备语句
     Statement stmt = prepareStatement(handler, ms.getStatementLog());
     return handler.update(stmt);
   }
@@ -79,12 +85,15 @@ public class ReuseExecutor extends BaseExecutor {
 
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+    //得到绑定的SQL语句
     BoundSql boundSql = handler.getBoundSql();
     String sql = boundSql.getSql();
+    //如果缓存中已经有了，直接得到Statement
     if (hasStatementFor(sql)) {
       stmt = getStatement(sql);
       applyTransactionTimeout(stmt);
     } else {
+      //如果缓存没有找到，则和SimpleExecutor处理完全一样，然后加入缓存
       Connection connection = getConnection(statementLog);
       stmt = handler.prepare(connection, transaction.getTimeout());
       putStatement(sql, stmt);

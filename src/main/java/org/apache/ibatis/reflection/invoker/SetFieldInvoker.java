@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  */
 package org.apache.ibatis.reflection.invoker;
 
-import java.lang.reflect.Field;
-
 import org.apache.ibatis.reflection.Reflector;
 
+import java.lang.reflect.Field;
+
 /**
+ * setter调用者
+ *
  * @author Clinton Begin
  */
 public class SetFieldInvoker implements Invoker {
@@ -29,6 +31,7 @@ public class SetFieldInvoker implements Invoker {
     this.field = field;
   }
 
+  //就是调用Field.set
   @Override
   public Object invoke(Object target, Object[] args) throws IllegalAccessException {
     try {

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.apache.ibatis.builder;
 
-import java.util.List;
-
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
+import java.util.List;
+
 /**
+ * 已经编译好的静态SQL源：DynamicSqlSource 和 RawSqlSource 编译后会存储到 StaticSqlSource
+ *
  * @author Clinton Begin
  */
 public class StaticSqlSource implements SqlSource {

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,27 +15,21 @@
  */
 package org.apache.ibatis.executor.statement;
 
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.ExecutorException;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
-import org.apache.ibatis.mapping.BoundSql;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.ParameterMapping;
-import org.apache.ibatis.mapping.ParameterMode;
-import org.apache.ibatis.mapping.ResultSetType;
+import org.apache.ibatis.mapping.*;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.type.JdbcType;
 
+import java.sql.*;
+import java.util.List;
+
 /**
+ * 存储过程语句处理器(CALLABLE)
+ *
  * @author Clinton Begin
  */
 public class CallableStatementHandler extends BaseStatementHandler {
@@ -46,12 +40,15 @@ public class CallableStatementHandler extends BaseStatementHandler {
 
   @Override
   public int update(Statement statement) throws SQLException {
+    //这个方法和PreparedStatementHandler代码基本一样,就多了最后的handleOutputParameters
+    //调用Statement.execute和Statement.getUpdateCount
     CallableStatement cs = (CallableStatement) statement;
     cs.execute();
     int rows = cs.getUpdateCount();
     Object parameterObject = boundSql.getParameterObject();
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     keyGenerator.processAfter(executor, mappedStatement, cs, parameterObject);
+    //然后交给ResultSetHandler.handleOutputParameters
     resultSetHandler.handleOutputParameters(cs);
     return rows;
   }
@@ -80,8 +77,10 @@ public class CallableStatementHandler extends BaseStatementHandler {
     return resultList;
   }
 
+  //实例化创建一个Statement
   @Override
   protected Statement instantiateStatement(Connection connection) throws SQLException {
+    //调用Connection.prepareCall
     String sql = boundSql.getSql();
     if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
       return connection.prepareCall(sql);
@@ -92,7 +91,9 @@ public class CallableStatementHandler extends BaseStatementHandler {
 
   @Override
   public void parameterize(Statement statement) throws SQLException {
+    //注册OUT参数
     registerOutputParameters((CallableStatement) statement);
+    //调用ParameterHandler.setParameters
     parameterHandler.setParameters((CallableStatement) statement);
   }
 
@@ -100,6 +101,7 @@ public class CallableStatementHandler extends BaseStatementHandler {
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     for (int i = 0, n = parameterMappings.size(); i < n; i++) {
       ParameterMapping parameterMapping = parameterMappings.get(i);
+      //只处理OUT|INOUT
       if (parameterMapping.getMode() == ParameterMode.OUT || parameterMapping.getMode() == ParameterMode.INOUT) {
         if (null == parameterMapping.getJdbcType()) {
           throw new ExecutorException("The JDBC Type must be specified for output parameter.  Parameter: " + parameterMapping.getProperty());
@@ -107,6 +109,7 @@ public class CallableStatementHandler extends BaseStatementHandler {
           if (parameterMapping.getNumericScale() != null && (parameterMapping.getJdbcType() == JdbcType.NUMERIC || parameterMapping.getJdbcType() == JdbcType.DECIMAL)) {
             cs.registerOutParameter(i + 1, parameterMapping.getJdbcType().TYPE_CODE, parameterMapping.getNumericScale());
           } else {
+            //核心是调用CallableStatement.registerOutParameter
             if (parameterMapping.getJdbcTypeName() == null) {
               cs.registerOutParameter(i + 1, parameterMapping.getJdbcType().TYPE_CODE);
             } else {

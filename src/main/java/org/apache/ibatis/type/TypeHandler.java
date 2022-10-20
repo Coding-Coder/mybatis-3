@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,14 +21,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * 类型处理器
+ *
  * @author Clinton Begin
  */
 public interface TypeHandler<T> {
 
+  //设置参数
   void setParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException;
 
   /**
-   * Gets the result.
+   * 取得结果,供普通select用,Gets the result.
    *
    * @param rs
    *          the rs
@@ -40,8 +43,10 @@ public interface TypeHandler<T> {
    */
   T getResult(ResultSet rs, String columnName) throws SQLException;
 
+  //取得结果,供普通select用
   T getResult(ResultSet rs, int columnIndex) throws SQLException;
 
+  //取得结果,供SP用
   T getResult(CallableStatement cs, int columnIndex) throws SQLException;
 
 }

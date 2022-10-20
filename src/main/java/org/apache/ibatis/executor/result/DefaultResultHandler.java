@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,24 +15,28 @@
  */
 package org.apache.ibatis.executor.result;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.session.ResultContext;
 import org.apache.ibatis.session.ResultHandler;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
+ * 默认结果处理器
+ *
  * @author Clinton Begin
  */
 public class DefaultResultHandler implements ResultHandler<Object> {
 
+  //内部实现是存了一个List
   private final List<Object> list;
 
   public DefaultResultHandler() {
     list = new ArrayList<>();
   }
 
+  //但不一定是ArrayList,也可以通过ObjectFactory来产生特定的List
   @SuppressWarnings("unchecked")
   public DefaultResultHandler(ObjectFactory objectFactory) {
     list = objectFactory.create(List.class);
@@ -40,6 +44,7 @@ public class DefaultResultHandler implements ResultHandler<Object> {
 
   @Override
   public void handleResult(ResultContext<?> context) {
+    //处理很简单，就是把记录加入List
     list.add(context.getResultObject());
   }
 

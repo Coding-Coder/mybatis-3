@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@
 package org.apache.ibatis.executor;
 
 /**
+ * 错误上下文
+ *
  * @author Clinton Begin
  */
 public class ErrorContext {
 
+  // 获得 \n 不同的操作系统不一样
   private static final String LINE_SEPARATOR = System.lineSeparator();
+  //每个线程给开一个错误上下文，防止多线程问题
   private static final ThreadLocal<ErrorContext> LOCAL = ThreadLocal.withInitial(ErrorContext::new);
 
   private ErrorContext stored;
@@ -31,9 +35,11 @@ public class ErrorContext {
   private String sql;
   private Throwable cause;
 
+  //单例模式
   private ErrorContext() {
   }
 
+  //工厂方法，得到一个实例
   public static ErrorContext instance() {
     return LOCAL.get();
   }
@@ -83,6 +89,7 @@ public class ErrorContext {
     return this;
   }
 
+  //全部清空重置
   public ErrorContext reset() {
     resource = null;
     activity = null;
@@ -94,6 +101,7 @@ public class ErrorContext {
     return this;
   }
 
+  //打印信息供人阅读
   @Override
   public String toString() {
     StringBuilder description = new StringBuilder();
@@ -130,6 +138,7 @@ public class ErrorContext {
     if (sql != null) {
       description.append(LINE_SEPARATOR);
       description.append("### SQL: ");
+      //把sql压缩到一行里
       description.append(sql.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim());
     }
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-       Copyright 2009-2021 the original author or authors.
+       Copyright 2009-2022 the original author or authors.
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
     <groupId>org.mybatis</groupId>
     <artifactId>mybatis-parent</artifactId>
     <version>33</version>
-    <relativePath />
+    <relativePath>../mybatis-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>mybatis</artifactId>
@@ -320,10 +320,10 @@
           </systemProperties>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pdf-plugin</artifactId>
-      </plugin>
+<!--      <plugin>-->
+<!--        <groupId>org.apache.maven.plugins</groupId>-->
+<!--        <artifactId>maven-pdf-plugin</artifactId>-->
+<!--      </plugin>-->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>

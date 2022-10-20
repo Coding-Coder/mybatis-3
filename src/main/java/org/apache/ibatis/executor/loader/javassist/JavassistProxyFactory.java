@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,15 +15,9 @@
  */
 package org.apache.ibatis.executor.loader.javassist;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.Proxy;
 import javassist.util.proxy.ProxyFactory;
-
 import org.apache.ibatis.executor.ExecutorException;
 import org.apache.ibatis.executor.loader.AbstractEnhancedDeserializationProxy;
 import org.apache.ibatis.executor.loader.AbstractSerialStateHolder;
@@ -38,7 +32,14 @@ import org.apache.ibatis.reflection.property.PropertyCopier;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 import org.apache.ibatis.session.Configuration;
 
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
+ * Javassist延迟加载代理工厂
+ *
  * @author Eduardo Macarron
  */
 public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.ProxyFactory {
@@ -48,6 +49,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
   public JavassistProxyFactory() {
     try {
+      //先检查是否有javassist
       Resources.classForName("javassist.util.proxy.ProxyFactory");
     } catch (Throwable e) {
       throw new IllegalStateException("Cannot enable lazy loading because Javassist is not available. Add Javassist to your classpath.", e);
@@ -65,6 +67,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
   static Object crateProxy(Class<?> type, MethodHandler callback, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
 
+    //核心就是用javassist的ProxyFactory,没啥可说的，下面逻辑都是cglib的翻版
     ProxyFactory enhancer = new ProxyFactory();
     enhancer.setSuperclass(type);
 
@@ -141,13 +144,14 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
           } else {
             if (lazyLoader.size() > 0 && !FINALIZE_METHOD.equals(methodName)) {
               if (aggressive || lazyLoadTriggerMethods.contains(methodName)) {
-                lazyLoader.loadAll();
-              } else if (PropertyNamer.isSetter(methodName)) {
+                lazyLoader.loadAll();//触发所有的懒加载方法
+              } else if (PropertyNamer.isSetter(methodName)) {//如果是setter方法
                 final String property = PropertyNamer.methodToProperty(methodName);
-                lazyLoader.remove(property);
-              } else if (PropertyNamer.isGetter(methodName)) {
+                lazyLoader.remove(property);//删除该懒加载
+              } else if (PropertyNamer.isGetter(methodName)) {//如是是getter方法
                 final String property = PropertyNamer.methodToProperty(methodName);
                 if (lazyLoader.hasLoader(property)) {
+                  //触发懒加载
                   lazyLoader.load(property);
                 }
               }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,23 +15,26 @@
  */
 package org.apache.ibatis.reflection;
 
+import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
+import org.apache.ibatis.reflection.invoker.Invoker;
+import org.apache.ibatis.reflection.invoker.MethodInvoker;
+import org.apache.ibatis.reflection.property.PropertyTokenizer;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 
-import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
-import org.apache.ibatis.reflection.invoker.Invoker;
-import org.apache.ibatis.reflection.invoker.MethodInvoker;
-import org.apache.ibatis.reflection.property.PropertyTokenizer;
-
 /**
+ * 元类:基于属性名获取getter setter方法，支持子属性获取
+ *
  * @author Clinton Begin
  */
 public class MetaClass {
 
   private final ReflectorFactory reflectorFactory;
+  //反射器：可以看到方法基本都是再次委派给这个Reflector
   private final Reflector reflector;
 
   private MetaClass(Class<?> type, ReflectorFactory reflectorFactory) {

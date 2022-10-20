@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.apache.ibatis.scripting.xmltags;
 
+import org.apache.ibatis.session.Configuration;
+
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
@@ -28,6 +28,7 @@ public class SetSqlNode extends TrimSqlNode {
   private static final List<String> COMMA = Collections.singletonList(",");
 
   public SetSqlNode(Configuration configuration,SqlNode contents) {
+    // 去除首尾的逗号, 添加前缀SET
     super(configuration, contents, "SET", COMMA, null, COMMA);
   }
 

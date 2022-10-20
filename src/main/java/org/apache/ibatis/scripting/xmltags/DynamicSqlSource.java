@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,11 +21,14 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 动态SQL源:需要解析XML中的脚本
+ *
  * @author Clinton Begin
  */
 public class DynamicSqlSource implements SqlSource {
 
   private final Configuration configuration;
+  // 根SQL节点（SqlNode使用了组合模式）
   private final SqlNode rootSqlNode;
 
   public DynamicSqlSource(Configuration configuration, SqlNode rootSqlNode) {
@@ -33,13 +36,19 @@ public class DynamicSqlSource implements SqlSource {
     this.rootSqlNode = rootSqlNode;
   }
 
+  //得到绑定的SQL
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+    // 生成一个动态解析上下文
     DynamicContext context = new DynamicContext(configuration, parameterObject);
+	  // 这里SqlNode.apply只是将${}这种参数替换掉，并没有替换#{}这种参数
     rootSqlNode.apply(context);
+	  // 调用SqlSourceBuilder
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
     Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+	  // SqlSourceBuilder.parse,注意这里返回的是StaticSqlSource,解析完了就把那些参数都替换成?了，也就是最基本的JDBC的SQL写法
     SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+	  // 看似是又去递归调用SqlSource.getBoundSql，其实因为是StaticSqlSource，所以没问题，不是递归调用
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
     context.getBindings().forEach(boundSql::setAdditionalParameter);
     return boundSql;

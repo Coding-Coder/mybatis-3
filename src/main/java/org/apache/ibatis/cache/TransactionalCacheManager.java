@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,23 +15,27 @@
  */
 package org.apache.ibatis.cache;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.ibatis.cache.decorators.TransactionalCache;
 import org.apache.ibatis.util.MapUtil;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
+ * 事务缓存管理器，被CachingExecutor使用
+ *
  * @author Clinton Begin
  */
 public class TransactionalCacheManager {
 
+  //管理了许多 暂存区(TransactionalCache)
   private final Map<Cache, TransactionalCache> transactionalCaches = new HashMap<>();
 
   public void clear(Cache cache) {
     getTransactionalCache(cache).clear();
   }
 
+  //得到某个TransactionalCache的值
   public Object getObject(Cache cache, CacheKey key) {
     return getTransactionalCache(cache).getObject(key);
   }
@@ -40,18 +44,21 @@ public class TransactionalCacheManager {
     getTransactionalCache(cache).putObject(key, value);
   }
 
+  //提交时全部提交
   public void commit() {
     for (TransactionalCache txCache : transactionalCaches.values()) {
       txCache.commit();
     }
   }
 
+  //回滚时全部回滚
   public void rollback() {
     for (TransactionalCache txCache : transactionalCaches.values()) {
       txCache.rollback();
     }
   }
 
+  //获取对应的TransactionalCache，如果不存在则new TransactionalCache()再返回
   private TransactionalCache getTransactionalCache(Cache cache) {
     return MapUtil.computeIfAbsent(transactionalCaches, cache, TransactionalCache::new);
   }

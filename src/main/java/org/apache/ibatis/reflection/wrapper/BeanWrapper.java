@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,23 +15,23 @@
  */
 package org.apache.ibatis.reflection.wrapper;
 
-import java.util.List;
-
-import org.apache.ibatis.reflection.ExceptionUtil;
-import org.apache.ibatis.reflection.MetaClass;
-import org.apache.ibatis.reflection.MetaObject;
-import org.apache.ibatis.reflection.ReflectionException;
-import org.apache.ibatis.reflection.SystemMetaObject;
+import org.apache.ibatis.reflection.*;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.invoker.Invoker;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
+import java.util.List;
+
 /**
+ * Bean包装器
+ *
  * @author Clinton Begin
  */
 public class BeanWrapper extends BaseWrapper {
 
+  //原来的对象
   private final Object object;
+  //元类
   private final MetaClass metaClass;
 
   public BeanWrapper(MetaObject metaObject, Object object) {
@@ -42,20 +42,26 @@ public class BeanWrapper extends BaseWrapper {
 
   @Override
   public Object get(PropertyTokenizer prop) {
+    //判断是否是集合：如果有index(有中括号),说明是集合，那就要解析集合
     if (prop.getIndex() != null) {
+      // 解析集合,获取集合
       Object collection = resolveCollection(prop, object);
+      // 获取集合的值
       return getCollectionValue(prop, collection);
     } else {
+      // 基于反射获取值
       return getBeanProperty(prop, object);
     }
   }
 
   @Override
   public void set(PropertyTokenizer prop, Object value) {
+      //如果有index,说明是集合，那就要解析集合,调用的是BaseWrapper.resolveCollection 和 setCollectionValue
     if (prop.getIndex() != null) {
       Object collection = resolveCollection(prop, object);
       setCollectionValue(prop, collection, value);
     } else {
+        //否则，setBeanProperty
       setBeanProperty(prop, object, value);
     }
   }
@@ -157,8 +163,10 @@ public class BeanWrapper extends BaseWrapper {
     return metaValue;
   }
 
+  //基于反射获取值
   private Object getBeanProperty(PropertyTokenizer prop, Object object) {
     try {
+      //得到getter方法，然后调用
       Invoker method = metaClass.getGetInvoker(prop.getName());
       try {
         return method.invoke(object, NO_ARGUMENTS);
@@ -174,6 +182,7 @@ public class BeanWrapper extends BaseWrapper {
 
   private void setBeanProperty(PropertyTokenizer prop, Object object, Object value) {
     try {
+        //得到setter方法，然后调用
       Invoker method = metaClass.getSetInvoker(prop.getName());
       Object[] params = {value};
       try {

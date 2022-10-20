@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.apache.ibatis.executor.result;
 
-import java.util.Map;
-
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.ReflectorFactory;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
@@ -24,11 +22,16 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.apache.ibatis.session.ResultContext;
 import org.apache.ibatis.session.ResultHandler;
 
+import java.util.Map;
+
 /**
+ * 默认Map结果处理器
+ *
  * @author Clinton Begin
  */
 public class DefaultMapResultHandler<K, V> implements ResultHandler<V> {
 
+  //内部实现是存了一个Map
   private final Map<K, V> mappedResults;
   private final String mapKey;
   private final ObjectFactory objectFactory;
@@ -47,10 +50,13 @@ public class DefaultMapResultHandler<K, V> implements ResultHandler<V> {
   @Override
   public void handleResult(ResultContext<? extends V> context) {
     final V value = context.getResultObject();
+    //MetaObject.forObject,包装一下记录
+    //MetaObject是用反射来包装各种类型
     final MetaObject mo = MetaObject.forObject(value, objectFactory, objectWrapperFactory, reflectorFactory);
     // TODO is that assignment always true?
     final K key = (K) mo.getValue(mapKey);
     mappedResults.put(key, value);
+    //这个类主要目的是把得到的List转为Map
   }
 
   public Map<K, V> getMappedResults() {

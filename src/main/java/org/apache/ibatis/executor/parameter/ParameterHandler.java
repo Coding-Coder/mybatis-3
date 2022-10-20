@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,14 +19,18 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
+ * 参数处理器
+ *
  * A parameter handler sets the parameters of the {@code PreparedStatement}.
  *
  * @author Clinton Begin
  */
 public interface ParameterHandler {
 
+  //得到参数
   Object getParameterObject();
 
+  //设置参数
   void setParameters(PreparedStatement ps) throws SQLException;
 
 }

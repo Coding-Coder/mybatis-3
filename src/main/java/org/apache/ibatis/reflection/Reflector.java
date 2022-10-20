@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,34 +15,19 @@
  */
 package org.apache.ibatis.reflection;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.ReflectPermission;
-import java.lang.reflect.Type;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.ibatis.reflection.invoker.AmbiguousMethodInvoker;
-import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
-import org.apache.ibatis.reflection.invoker.Invoker;
-import org.apache.ibatis.reflection.invoker.MethodInvoker;
-import org.apache.ibatis.reflection.invoker.SetFieldInvoker;
+import org.apache.ibatis.reflection.invoker.*;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 import org.apache.ibatis.util.MapUtil;
 
+import java.lang.reflect.*;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.Map.Entry;
+
 /**
+ * 反射器：基于属性名获取getter/setter方法、属性类别(不支持子属性)，而且加了缓存
+ * 可参考ReflectorTest来理解这个类的用处
+ *
  * This class represents a cached set of class definition information that
  * allows for easy mapping between property names and getter/setter methods.
  *
@@ -51,26 +36,38 @@ import org.apache.ibatis.util.MapUtil;
 public class Reflector {
 
   private final Class<?> type;
+  //getter的属性列表
   private final String[] readablePropertyNames;
+  //setter的属性列表
   private final String[] writablePropertyNames;
+  //setter的方法列表
   private final Map<String, Invoker> setMethods = new HashMap<>();
+  //getter的方法列表
   private final Map<String, Invoker> getMethods = new HashMap<>();
+  //setter的类型列表
   private final Map<String, Class<?>> setTypes = new HashMap<>();
+  //getter的类型列表
   private final Map<String, Class<?>> getTypes = new HashMap<>();
+  //默认构造函数
   private Constructor<?> defaultConstructor;
 
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
   public Reflector(Class<?> clazz) {
     type = clazz;
+    //加入构造函数
     addDefaultConstructor(clazz);
     Method[] classMethods = getClassMethods(clazz);
+    //加入getter
     addGetMethods(classMethods);
+    //加入setter
     addSetMethods(classMethods);
+    //加入字段
     addFields(clazz);
     readablePropertyNames = getMethods.keySet().toArray(new String[0]);
     writablePropertyNames = setMethods.keySet().toArray(new String[0]);
     for (String propName : readablePropertyNames) {
+        //这里为了能找到某一个属性，就把他变成大写作为map的key。。。
       caseInsensitivePropertyMap.put(propName.toUpperCase(Locale.ENGLISH), propName);
     }
     for (String propName : writablePropertyNames) {
@@ -78,6 +75,7 @@ public class Reflector {
     }
   }
 
+  //加入构造函数
   private void addDefaultConstructor(Class<?> clazz) {
     Constructor<?>[] constructors = clazz.getDeclaredConstructors();
     Arrays.stream(constructors).filter(constructor -> constructor.getParameterTypes().length == 0)
@@ -86,6 +84,7 @@ public class Reflector {
 
   private void addGetMethods(Method[] methods) {
     Map<String, List<Method>> conflictingGetters = new HashMap<>();
+    //这里getter和setter都调用了getClassMethods，有点浪费效率了。不妨把addGetMethods,addSetMethods合并成一个方法叫addMethods
     Arrays.stream(methods).filter(m -> m.getParameterTypes().length == 0 && PropertyNamer.isGetter(m.getName()))
       .forEach(m -> addMethodConflict(conflictingGetters, PropertyNamer.methodToProperty(m.getName()), m));
     resolveGetterConflicts(conflictingGetters);
@@ -264,6 +263,8 @@ public class Reflector {
   }
 
   /**
+   * 得到所有方法，包括private方法，包括父类方法.包括接口方法
+   *
    * This method returns an array containing all methods
    * declared in this class and any superclass.
    * We use this method, instead of the simpler <code>Class.getMethods()</code>,
@@ -296,6 +297,7 @@ public class Reflector {
   private void addUniqueMethods(Map<String, Method> uniqueMethods, Method[] methods) {
     for (Method currentMethod : methods) {
       if (!currentMethod.isBridge()) {
+          //取得签名
         String signature = getSignature(currentMethod);
         // check to see if the method is already known
         // if it is known, then an extended class must have

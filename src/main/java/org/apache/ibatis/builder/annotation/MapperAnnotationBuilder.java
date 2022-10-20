@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,50 +15,9 @@
  */
 package org.apache.ibatis.builder.annotation;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.ibatis.annotations.Arg;
-import org.apache.ibatis.annotations.CacheNamespace;
-import org.apache.ibatis.annotations.CacheNamespaceRef;
-import org.apache.ibatis.annotations.Case;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.DeleteProvider;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.InsertProvider;
-import org.apache.ibatis.annotations.Lang;
-import org.apache.ibatis.annotations.MapKey;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Options.FlushCachePolicy;
-import org.apache.ibatis.annotations.Property;
-import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.annotations.ResultMap;
-import org.apache.ibatis.annotations.ResultType;
-import org.apache.ibatis.annotations.Results;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.SelectKey;
-import org.apache.ibatis.annotations.SelectProvider;
-import org.apache.ibatis.annotations.TypeDiscriminator;
-import org.apache.ibatis.annotations.Update;
-import org.apache.ibatis.annotations.UpdateProvider;
+import org.apache.ibatis.annotations.Options.FlushCachePolicy;
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.builder.CacheRefResolver;
@@ -71,15 +30,7 @@ import org.apache.ibatis.executor.keygen.KeyGenerator;
 import org.apache.ibatis.executor.keygen.NoKeyGenerator;
 import org.apache.ibatis.executor.keygen.SelectKeyGenerator;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.mapping.Discriminator;
-import org.apache.ibatis.mapping.FetchType;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.ResultFlag;
-import org.apache.ibatis.mapping.ResultMapping;
-import org.apache.ibatis.mapping.ResultSetType;
-import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.mapping.SqlSource;
-import org.apache.ibatis.mapping.StatementType;
+import org.apache.ibatis.mapping.*;
 import org.apache.ibatis.parsing.PropertyParser;
 import org.apache.ibatis.reflection.TypeParameterResolver;
 import org.apache.ibatis.scripting.LanguageDriver;
@@ -90,7 +41,17 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.UnknownTypeHandler;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
+ * 注解方式构建mapper
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
@@ -115,11 +76,15 @@ public class MapperAnnotationBuilder {
   public void parse() {
     String resource = type.toString();
     if (!configuration.isResourceLoaded(resource)) {
+      // 顺带进行解析和装载类同名的XML文件(同样的在解析XML的时候也会触发注解的解析)(所以配置时，只配置了其中一种另一种也会生效)
       loadXmlResource();
       configuration.addLoadedResource(resource);
       assistant.setCurrentNamespace(type.getName());
+      // 解析缓存
       parseCache();
+      // 解析缓存引用
       parseCacheRef();
+      // 遍历所有方法
       for (Method method : type.getMethods()) {
         if (!canHaveStatement(method)) {
           continue;
@@ -129,6 +94,7 @@ public class MapperAnnotationBuilder {
           parseResultMap(method);
         }
         try {
+          // 核心步骤：解析 Statement
           parseStatement(method);
         } catch (IncompleteElementException e) {
           configuration.addIncompleteMethod(new MethodResolver(this, method));
@@ -187,6 +153,7 @@ public class MapperAnnotationBuilder {
       Integer size = cacheDomain.size() == 0 ? null : cacheDomain.size();
       Long flushInterval = cacheDomain.flushInterval() == 0 ? null : cacheDomain.flushInterval();
       Properties props = convertToProperties(cacheDomain.properties());
+      // 为助手创建缓存对象
       assistant.useNewCache(cacheDomain.implementation(), cacheDomain.eviction(), flushInterval, size, cacheDomain.readWrite(), cacheDomain.blocking(), props);
     }
   }
@@ -300,6 +267,7 @@ public class MapperAnnotationBuilder {
     getAnnotationWrapper(method, true, statementAnnotationTypes).ifPresent(statementAnnotation -> {
       final SqlSource sqlSource = buildSqlSource(statementAnnotation.getAnnotation(), parameterTypeClass, languageDriver, method);
       final SqlCommandType sqlCommandType = statementAnnotation.getSqlCommandType();
+      // @Options注解解析
       final Options options = getAnnotationWrapper(method, false, Options.class).map(x -> (Options)x.getAnnotation()).orElse(null);
       final String mappedStatementId = type.getName() + "." + method.getName();
 
@@ -355,6 +323,7 @@ public class MapperAnnotationBuilder {
         }
       }
 
+      // 前面的代码是准备参数，然后调用MapperBuilderAssistant映射构建助手进行构建
       assistant.addMappedStatement(
           mappedStatementId,
           sqlSource,

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.apache.ibatis.scripting.xmltags;
 import java.util.List;
 
 /**
+ * choose SQL节点
+ *
  * @author Clinton Begin
  */
 public class ChooseSqlNode implements SqlNode {
@@ -31,15 +33,18 @@ public class ChooseSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    //循环判断if，只要有1个为true了，返回true
     for (SqlNode sqlNode : ifSqlNodes) {
       if (sqlNode.apply(context)) {
         return true;
       }
     }
+    //if都不为true，那就看otherwise
     if (defaultSqlNode != null) {
       defaultSqlNode.apply(context);
       return true;
     }
+    //如果连otherwise都没有，返回false
     return false;
   }
 }

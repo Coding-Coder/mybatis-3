@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package org.apache.ibatis.mapping;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
 import org.apache.ibatis.session.Configuration;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
+ * 绑定的SQL,是从SqlSource而来，将动态内容都处理完成得到的SQL语句字符串，其中包括?,还有绑定的参数
+ *
  * An actual SQL String got from an {@link SqlSource} after having processed any dynamic content.
  * The SQL may have SQL placeholders "?" and an list (ordered) of an parameter mappings
  * with the additional information for each parameter (at least the property name of the input object to read
@@ -35,10 +37,15 @@ import org.apache.ibatis.session.Configuration;
  */
 public class BoundSql {
 
+  // 最终可执行的SQL语句
   private final String sql;
+  // 参数映射：sql中?的映射解释
   private final List<ParameterMapping> parameterMappings;
+  // 传递过来的最原始的参数(单个值的时候就是对应的类型，多个值时是Map)
   private final Object parameterObject;
+  // 对原始的参数进行脚本演算之后得出的一些参数
   private final Map<String, Object> additionalParameters;
+  // 用来操作additionalParameters的
   private final MetaObject metaParameters;
 
   public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings, Object parameterObject) {

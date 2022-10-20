@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,45 +15,28 @@
  */
 package org.apache.ibatis.builder;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-
 import org.apache.ibatis.cache.Cache;
 import org.apache.ibatis.cache.decorators.LruCache;
 import org.apache.ibatis.cache.impl.PerpetualCache;
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
-import org.apache.ibatis.mapping.CacheBuilder;
-import org.apache.ibatis.mapping.Discriminator;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.ParameterMap;
-import org.apache.ibatis.mapping.ParameterMapping;
-import org.apache.ibatis.mapping.ParameterMode;
-import org.apache.ibatis.mapping.ResultFlag;
-import org.apache.ibatis.mapping.ResultMap;
-import org.apache.ibatis.mapping.ResultMapping;
-import org.apache.ibatis.mapping.ResultSetType;
-import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.mapping.SqlSource;
-import org.apache.ibatis.mapping.StatementType;
+import org.apache.ibatis.mapping.*;
 import org.apache.ibatis.reflection.MetaClass;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 
+import java.util.*;
+
 /**
+ * 映射构建器助手，建造者模式，继承BaseBuilder
+ *
  * @author Clinton Begin
  */
 public class MapperBuilderAssistant extends BaseBuilder {
 
+  //每个助手都有1个namespace,resource,cache
   private String currentNamespace;
   private final String resource;
   private Cache currentCache;
@@ -82,6 +65,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     this.currentNamespace = currentNamespace;
   }
 
+  //为id加上namespace前缀，如selectPerson-->org.a.b.selectPerson
   public String applyCurrentNamespace(String base, boolean isReference) {
     if (base == null) {
       return null;
@@ -128,6 +112,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
       boolean readWrite,
       boolean blocking,
       Properties props) {
+    //调用CacheBuilder构建cache,id=currentNamespace
     Cache cache = new CacheBuilder(currentNamespace)
         .implementation(valueOrDefault(typeClass, PerpetualCache.class))
         .addDecorator(valueOrDefault(evictionClass, LruCache.class))
@@ -137,7 +122,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .blocking(blocking)
         .properties(props)
         .build();
+    //加入缓存
     configuration.addCache(cache);
+    //当前的缓存
     currentCache = cache;
     return cache;
   }
@@ -173,6 +160,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .build();
   }
 
+  //增加ResultMap
   public ResultMap addResultMap(
       String id,
       Class<?> type,
@@ -241,6 +229,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return new Discriminator.Builder(configuration, resultMapping, namespaceDiscriminatorMap).build();
   }
 
+  //增加映射语句
   public MappedStatement addMappedStatement(
       String id,
       SqlSource sqlSource,
@@ -266,10 +255,12 @@ public class MapperBuilderAssistant extends BaseBuilder {
     if (unresolvedCacheRef) {
       throw new IncompleteElementException("Cache-ref not yet resolved");
     }
-
+    //为id加上namespace前缀
     id = applyCurrentNamespace(id, false);
+    //是否是select语句
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
 
+    //建造者模式
     MappedStatement.Builder statementBuilder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType)
         .resource(resource)
         .fetchSize(fetchSize)
@@ -286,14 +277,17 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .resultSetType(resultSetType)
         .flushCacheRequired(valueOrDefault(flushCache, !isSelect))
         .useCache(valueOrDefault(useCache, isSelect))
+        // 直接引用当前的缓存空间
         .cache(currentCache);
 
+    // 参数映射
     ParameterMap statementParameterMap = getStatementParameterMap(parameterMap, parameterType, id);
     if (statementParameterMap != null) {
       statementBuilder.parameterMap(statementParameterMap);
     }
-
+    // 参数验证然后构建
     MappedStatement statement = statementBuilder.build();
+    // 建造好调用configuration.addMappedStatement
     configuration.addMappedStatement(statement);
     return statement;
   }
@@ -380,6 +374,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return parameterMap;
   }
 
+  //2.result map
   private List<ResultMap> getStatementResultMaps(
       String resultMap,
       Class<?> resultType,
@@ -388,6 +383,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
     List<ResultMap> resultMaps = new ArrayList<>();
     if (resultMap != null) {
+      //2.1 resultMap是高级功能
       String[] resultMapNames = resultMap.split(",");
       for (String resultMapName : resultMapNames) {
         try {
@@ -397,6 +393,13 @@ public class MapperBuilderAssistant extends BaseBuilder {
         }
       }
     } else if (resultType != null) {
+      //2.2 resultType,一般用这个足矣了
+      //<select id="selectUsers" resultType="User">
+      //这种情况下,MyBatis 会在幕后自动创建一个 ResultMap,基于属性名来映射列到 JavaBean 的属性上。
+      //如果列名没有精确匹配,你可以在列名上使用 select 字句的别名来匹配标签。
+      //创建一个inline result map, 把resultType设上就OK了，
+      //然后后面被DefaultResultSetHandler.createResultObject()使用
+      //DefaultResultSetHandler.getRowValue()使用
       ResultMap inlineResultMap = new ResultMap.Builder(
           configuration,
           statementId + "-Inline",
@@ -408,6 +411,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return resultMaps;
   }
 
+  //构建result map
   public ResultMapping buildResultMapping(
       Class<?> resultType,
       String property,
@@ -431,6 +435,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     } else {
       composites = parseCompositeColumnName(column);
     }
+    //构建result map
     return new ResultMapping.Builder(configuration, property, column, javaTypeClass)
         .jdbcType(jdbcType)
         .nestedQueryId(applyCurrentNamespace(nestedSelect, true))
@@ -510,6 +515,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return columns;
   }
 
+  //解析复合列名，即列名由多个组成，可以先忽略
   private List<ResultMapping> parseCompositeColumnName(String columnName) {
     List<ResultMapping> composites = new ArrayList<>();
     if (columnName != null && (columnName.indexOf('=') > -1 || columnName.indexOf(',') > -1)) {

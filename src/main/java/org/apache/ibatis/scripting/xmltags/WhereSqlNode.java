@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package org.apache.ibatis.scripting.xmltags;
 
+import org.apache.ibatis.session.Configuration;
+
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.ibatis.session.Configuration;
-
 /**
+ * WhereSqlNode extends TrimSqlNode
+ *
  * @author Clinton Begin
  */
 public class WhereSqlNode extends TrimSqlNode {
@@ -28,6 +30,7 @@ public class WhereSqlNode extends TrimSqlNode {
   private static List<String> prefixList = Arrays.asList("AND ","OR ","AND\n", "OR\n", "AND\r", "OR\r", "AND\t", "OR\t");
 
   public WhereSqlNode(Configuration configuration, SqlNode contents) {
+    // 去除开头的AND/OR值，添加前缀WHERE
     super(configuration, contents, "WHERE", prefixList, null, null);
   }
 

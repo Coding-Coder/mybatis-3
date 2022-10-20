@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package org.apache.ibatis.binding;
 
+import org.apache.ibatis.binding.MapperProxy.MapperMethodInvoker;
+import org.apache.ibatis.session.SqlSession;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.ibatis.binding.MapperProxy.MapperMethodInvoker;
-import org.apache.ibatis.session.SqlSession;
-
 /**
+ * 映射器代理工厂
+ *
  * @author Lasse Voss
  */
 public class MapperProxyFactory<T> {
@@ -45,6 +47,7 @@ public class MapperProxyFactory<T> {
 
   @SuppressWarnings("unchecked")
   protected T newInstance(MapperProxy<T> mapperProxy) {
+    //用JDK自带的动态代理生成映射器
     return (T) Proxy.newProxyInstance(mapperInterface.getClassLoader(), new Class[] { mapperInterface }, mapperProxy);
   }
 

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,33 +15,44 @@
  */
 package org.apache.ibatis.mapping;
 
-import java.sql.ResultSet;
-
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
+import java.sql.ResultSet;
+
 /**
+ * 参数映射
+ *
  * @author Clinton Begin
  */
 public class ParameterMapping {
 
   private Configuration configuration;
 
+  //例子：#{property,javaType=int,jdbcType=NUMERIC}
+
+  //property
   private String property;
+  //mode
   private ParameterMode mode;
+  //javaType=int
   private Class<?> javaType = Object.class;
+  //jdbcType=NUMERIC
   private JdbcType jdbcType;
+  //numericScale
   private Integer numericScale;
   private TypeHandler<?> typeHandler;
   private String resultMapId;
+  //jdbcType=NUMERIC
   private String jdbcTypeName;
   private String expression;
 
   private ParameterMapping() {
   }
 
+  //静态内部类，建造者模式
   public static class Builder {
     private ParameterMapping parameterMapping = new ParameterMapping();
 

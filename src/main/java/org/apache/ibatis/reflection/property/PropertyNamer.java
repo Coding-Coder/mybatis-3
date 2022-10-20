@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  */
 package org.apache.ibatis.reflection.property;
 
-import java.util.Locale;
-
 import org.apache.ibatis.reflection.ReflectionException;
 
+import java.util.Locale;
+
 /**
+ * 属性命名器
+ *
  * @author Clinton Begin
  */
 public final class PropertyNamer {
@@ -28,7 +30,9 @@ public final class PropertyNamer {
     // Prevent Instantiation of Static Class
   }
 
+  //getter|setter方法名转为属性
   public static String methodToProperty(String name) {
+    //去掉get|set|is
     if (name.startsWith("is")) {
       name = name.substring(2);
     } else if (name.startsWith("get") || name.startsWith("set")) {
@@ -37,6 +41,8 @@ public final class PropertyNamer {
       throw new ReflectionException("Error parsing property name '" + name + "'.  Didn't start with 'is', 'get' or 'set'.");
     }
 
+    //如果只有1个字母-->转为小写
+    //如果大于1个字母，第二个字母非大写-->转为小写
     if (name.length() == 1 || (name.length() > 1 && !Character.isUpperCase(name.charAt(1)))) {
       name = name.substring(0, 1).toLowerCase(Locale.ENGLISH) + name.substring(1);
     }
@@ -44,14 +50,18 @@ public final class PropertyNamer {
     return name;
   }
 
+  //是否是属性
   public static boolean isProperty(String name) {
+    //必须以get|set|is开头
     return isGetter(name) || isSetter(name);
   }
 
+  //是否是getter
   public static boolean isGetter(String name) {
     return (name.startsWith("get") && name.length() > 3) || (name.startsWith("is") && name.length() > 2);
   }
 
+  //是否是setter
   public static boolean isSetter(String name) {
     return name.startsWith("set") && name.length() > 3;
   }

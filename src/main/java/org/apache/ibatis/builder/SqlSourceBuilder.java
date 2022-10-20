@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 package org.apache.ibatis.builder;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.parsing.GenericTokenParser;
@@ -29,7 +24,17 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+
 /**
+ * SQL源码构建器：
+ * 做了两件事
+ *  1.把#{}变成?
+ *  2.然后把#{}中的值取出来变成ParameterMapping
+ *
  * @author Clinton Begin
  */
 public class SqlSourceBuilder extends BaseBuilder {
@@ -40,8 +45,10 @@ public class SqlSourceBuilder extends BaseBuilder {
     super(configuration);
   }
 
+  // 解析
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
+    //替换#{}中间的部分,如何替换，逻辑在ParameterMappingTokenHandler
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
     String sql;
     if (configuration.isShrinkWhitespacesInSql()) {
@@ -49,6 +56,7 @@ public class SqlSourceBuilder extends BaseBuilder {
     } else {
       sql = parser.parse(originalSql);
     }
+    //返回静态SQL源码
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());
   }
 
@@ -66,6 +74,7 @@ public class SqlSourceBuilder extends BaseBuilder {
     return builder.toString();
   }
 
+  //参数映射记号处理器，静态内部类
   private static class ParameterMappingTokenHandler extends BaseBuilder implements TokenHandler {
 
     private final List<ParameterMapping> parameterMappings = new ArrayList<>();
@@ -84,14 +93,20 @@ public class SqlSourceBuilder extends BaseBuilder {
 
     @Override
     public String handleToken(String content) {
+      //先构建参数映射
       parameterMappings.add(buildParameterMapping(content));
+      //如何替换很简单，永远是一个问号，但是参数的信息要记录在parameterMappings里面供后续使用
       return "?";
     }
 
+    //构建参数映射
     private ParameterMapping buildParameterMapping(String content) {
+      //#{favouriteSection,jdbcType=VARCHAR}
+      //先解析参数映射,就是转化成一个hashmap
       Map<String, String> propertiesMap = parseParameterMapping(content);
       String property = propertiesMap.get("property");
       Class<?> propertyType;
+      //这里分支比较多，需要逐个理解
       if (metaParameters.hasGetter(property)) { // issue #448 get type from additional params
         propertyType = metaParameters.getGetterType(property);
       } else if (typeHandlerRegistry.hasTypeHandler(parameterType)) {
@@ -137,6 +152,7 @@ public class SqlSourceBuilder extends BaseBuilder {
           throw new BuilderException("An invalid property '" + name + "' was found in mapping #{" + content + "}.  Valid properties are " + PARAMETER_PROPERTIES);
         }
       }
+      //#{age,javaType=int,jdbcType=NUMERIC,typeHandler=MyTypeHandler}
       if (typeHandlerAlias != null) {
         builder.typeHandler(resolveTypeHandler(javaType, typeHandlerAlias));
       }

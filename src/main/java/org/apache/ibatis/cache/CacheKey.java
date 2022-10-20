@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,18 @@
  */
 package org.apache.ibatis.cache;
 
+import org.apache.ibatis.reflection.ArrayUtil;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-import org.apache.ibatis.reflection.ArrayUtil;
-
 /**
+ * 缓存key
+ *  一般缓存框架的数据结构基本上都是 Key-Value 方式存储，
+ *  MyBatis 对于其 Key 的生成采取规则为：[mappedStatementId + offset + limit + SQL + queryParams + environment]生成一个哈希码
+ *
  * @author Clinton Begin
  */
 public class CacheKey implements Cloneable, Serializable {
@@ -60,6 +64,7 @@ public class CacheKey implements Cloneable, Serializable {
     this.updateList = new ArrayList<>();
   }
 
+  //传入一个Object数组，更新hashcode和效验码
   public CacheKey(Object[] objects) {
     this();
     updateAll(objects);
@@ -70,6 +75,7 @@ public class CacheKey implements Cloneable, Serializable {
   }
 
   public void update(Object object) {
+    //计算hash值，校验码
     int baseHashCode = object == null ? 1 : ArrayUtil.hashCode(object);
 
     count++;
@@ -78,6 +84,7 @@ public class CacheKey implements Cloneable, Serializable {
 
     hashcode = multiplier * hashcode + baseHashCode;
 
+    //同时将对象加入列表，这样万一两个CacheKey的hash码碰巧一样，再根据对象严格equals来区分
     updateList.add(object);
   }
 
@@ -98,6 +105,7 @@ public class CacheKey implements Cloneable, Serializable {
 
     final CacheKey cacheKey = (CacheKey) object;
 
+    //先比hashcode，checksum，count，理论上可以快速比出来
     if (hashcode != cacheKey.hashcode) {
       return false;
     }
@@ -108,6 +116,8 @@ public class CacheKey implements Cloneable, Serializable {
       return false;
     }
 
+    //万一两个CacheKey的hash码碰巧一样，再根据对象严格equals来区分
+    //这里两个list的size没比是否相等，其实前面count相等就已经保证了
     for (int i = 0; i < updateList.size(); i++) {
       Object thisObject = updateList.get(i);
       Object thatObject = cacheKey.updateList.get(i);

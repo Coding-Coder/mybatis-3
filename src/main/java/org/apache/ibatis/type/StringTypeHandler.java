@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * String类型处理器
+ * 调用PreparedStatement.setString, ResultSet.getString, CallableStatement.getString
+ *
  * @author Clinton Begin
  */
 public class StringTypeHandler extends BaseTypeHandler<String> {

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,12 +15,6 @@
  */
 package org.apache.ibatis.executor.statement;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
@@ -32,7 +26,15 @@ import org.apache.ibatis.mapping.ResultSetType;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+
 /**
+ * 简单语句处理器(STATEMENT)
+ *
  * @author Clinton Begin
  */
 public class SimpleStatementHandler extends BaseStatementHandler {
@@ -56,6 +58,7 @@ public class SimpleStatementHandler extends BaseStatementHandler {
       rows = statement.getUpdateCount();
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
     } else {
+      //如果没有keyGenerator,直接调用Statement.execute和Statement.getUpdateCount
       statement.execute(sql);
       rows = statement.getUpdateCount();
     }
@@ -65,13 +68,16 @@ public class SimpleStatementHandler extends BaseStatementHandler {
   @Override
   public void batch(Statement statement) throws SQLException {
     String sql = boundSql.getSql();
+    //调用Statement.addBatch
     statement.addBatch(sql);
   }
 
+  //select-->结果给ResultHandler
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
     String sql = boundSql.getSql();
     statement.execute(sql);
+    //先执行Statement.execute，然后交给ResultSetHandler.handleResultSets
     return resultSetHandler.handleResultSets(statement);
   }
 
@@ -82,8 +88,10 @@ public class SimpleStatementHandler extends BaseStatementHandler {
     return resultSetHandler.handleCursorResultSets(statement);
   }
 
+  //实例化创建一个Statement
   @Override
   protected Statement instantiateStatement(Connection connection) throws SQLException {
+    //调用Connection.createStatement
     if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
       return connection.createStatement();
     } else {

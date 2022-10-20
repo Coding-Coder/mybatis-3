@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,10 +15,6 @@
  */
 package org.apache.ibatis.mapping;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.ibatis.cache.Cache;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
@@ -28,7 +24,13 @@ import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
+ * 映射的语句
+ *
  * @author Clinton Begin
  */
 public final class MappedStatement {
@@ -40,7 +42,9 @@ public final class MappedStatement {
   private Integer timeout;
   private StatementType statementType;
   private ResultSetType resultSetType;
+  // SQL源码
   private SqlSource sqlSource;
+  // 二级缓存
   private Cache cache;
   private ParameterMap parameterMap;
   private List<ResultMap> resultMaps;
@@ -61,6 +65,7 @@ public final class MappedStatement {
     // constructor disabled
   }
 
+  //静态内部类，建造者模式
   public static class Builder {
     private MappedStatement mappedStatement = new MappedStatement();
 
@@ -302,7 +307,9 @@ public final class MappedStatement {
   }
 
   public BoundSql getBoundSql(Object parameterObject) {
+	  //其实就是调用sqlSource.getBoundSql
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+    //剩下的可以暂时忽略
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     if (parameterMappings == null || parameterMappings.isEmpty()) {
       boundSql = new BoundSql(configuration, boundSql.getSql(), parameterMap.getParameterMappings(), parameterObject);

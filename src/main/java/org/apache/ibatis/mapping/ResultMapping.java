@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,17 +15,20 @@
  */
 package org.apache.ibatis.mapping;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
 /**
+ * 结果映射
+ * MyBatis 中最重要最强大的元素
+ *
  * @author Clinton Begin
  */
 public class ResultMapping {
@@ -49,6 +52,7 @@ public class ResultMapping {
   ResultMapping() {
   }
 
+  //静态内部类，建造者模式
   public static class Builder {
     private ResultMapping resultMapping = new ResultMapping();
 
@@ -141,6 +145,7 @@ public class ResultMapping {
       return resultMapping;
     }
 
+    //一些验证逻辑,验证result map有没有写错
     private void validate() {
       // Issue #697: cannot define both nestedQueryId and nestedResultMapId
       if (resultMapping.nestedQueryId != null && resultMapping.nestedResultMapId != null) {

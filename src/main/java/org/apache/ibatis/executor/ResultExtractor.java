@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.apache.ibatis.executor;
 
-import java.lang.reflect.Array;
-import java.util.List;
-
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.session.Configuration;
 
+import java.lang.reflect.Array;
+import java.util.List;
+
 /**
+ * 结果抽取器
+ *
  * @author Andrew Gustafson
  */
 public class ResultExtractor {
@@ -37,12 +39,15 @@ public class ResultExtractor {
   public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
     Object value = null;
     if (targetType != null && targetType.isAssignableFrom(list.getClass())) {
+      //1.如果targetType是list，直接返回list
       value = list;
     } else if (targetType != null && objectFactory.isCollection(targetType)) {
+      //2.如果targetType是Collection，返回包装好的list
       value = objectFactory.create(targetType);
       MetaObject metaObject = configuration.newMetaObject(value);
       metaObject.addAll(list);
     } else if (targetType != null && targetType.isArray()) {
+      //3.如果targetType是数组，则数组转list
       Class<?> arrayComponentType = targetType.getComponentType();
       Object array = Array.newInstance(arrayComponentType, list.size());
       if (arrayComponentType.isPrimitive()) {
@@ -54,6 +59,7 @@ public class ResultExtractor {
         value = list.toArray((Object[])array);
       }
     } else {
+      //4.最后返回list的第0个元素
       if (list != null && list.size() > 1) {
         throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");
       } else if (list != null && list.size() == 1) {

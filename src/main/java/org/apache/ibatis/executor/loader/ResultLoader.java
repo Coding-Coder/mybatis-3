@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 package org.apache.ibatis.executor.loader;
 
-import java.sql.SQLException;
-import java.util.List;
-
-import javax.sql.DataSource;
-
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.ExecutorException;
@@ -34,7 +29,13 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 import org.apache.ibatis.transaction.TransactionFactory;
 
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.List;
+
 /**
+ * 结果延迟加载器：执行查询并获取结果，跨线程或原执行器关闭，将会构建一个新的执行器。
+ *
  * @author Clinton Begin
  */
 public class ResultLoader {
@@ -66,18 +67,23 @@ public class ResultLoader {
     this.creatorThreadId = Thread.currentThread().getId();
   }
 
+  //加载结果
   public Object loadResult() throws SQLException {
+	  //1.selectList
     List<Object> list = selectList();
+    //2.ResultExtractor.extractObjectFromList
     resultObject = resultExtractor.extractObjectFromList(list, targetType);
     return resultObject;
   }
 
   private <E> List<E> selectList() throws SQLException {
     Executor localExecutor = executor;
+    //如果executor已经被关闭了，则创建一个新的
     if (Thread.currentThread().getId() != this.creatorThreadId || localExecutor.isClosed()) {
       localExecutor = newExecutor();
     }
     try {
+      //又调回Executor.query去了，比较巧妙
       return localExecutor.query(mappedStatement, parameterObject, RowBounds.DEFAULT, Executor.NO_RESULT_HANDLER, cacheKey, boundSql);
     } finally {
       if (localExecutor != executor) {
@@ -97,6 +103,7 @@ public class ResultLoader {
     }
     final TransactionFactory transactionFactory = environment.getTransactionFactory();
     final Transaction tx = transactionFactory.newTransaction(ds, null, false);
+    //如果executor已经被关闭了，则创建一个新的SimpleExecutor
     return configuration.newExecutor(tx, ExecutorType.SIMPLE);
   }
 

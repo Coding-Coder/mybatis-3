@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.apache.ibatis.scripting.xmltags;
 
-import java.util.regex.Pattern;
-
 import org.apache.ibatis.parsing.GenericTokenParser;
 import org.apache.ibatis.parsing.TokenHandler;
 import org.apache.ibatis.scripting.ScriptingException;
 import org.apache.ibatis.type.SimpleTypeRegistry;
 
+import java.util.regex.Pattern;
+
 /**
+ * 包含了表达式的文本SQL节点（CDATA|TEXT|${}）
+ *
  * @author Clinton Begin
  */
 public class TextSqlNode implements SqlNode {
@@ -38,6 +40,7 @@ public class TextSqlNode implements SqlNode {
     this.injectionFilter = injectionFilter;
   }
 
+  //判断是否是动态sql
   public boolean isDynamic() {
     DynamicCheckerTokenParser checker = new DynamicCheckerTokenParser();
     GenericTokenParser parser = createParser(checker);
@@ -56,6 +59,7 @@ public class TextSqlNode implements SqlNode {
     return new GenericTokenParser("${", "}", handler);
   }
 
+  //绑定记号解析器
   private static class BindingTokenParser implements TokenHandler {
 
     private DynamicContext context;
@@ -74,12 +78,14 @@ public class TextSqlNode implements SqlNode {
       } else if (SimpleTypeRegistry.isSimpleType(parameter.getClass())) {
         context.getBindings().put("value", parameter);
       }
+      //从缓存里取得值
       Object value = OgnlCache.getValue(content, context.getBindings());
       String srtValue = value == null ? "" : String.valueOf(value); // issue #274 return "" instead of "null"
       checkInjection(srtValue);
       return srtValue;
     }
 
+    //检查是否匹配正则表达式
     private void checkInjection(String value) {
       if (injectionFilter != null && !injectionFilter.matcher(value).matches()) {
         throw new ScriptingException("Invalid input. Please conform to regex" + injectionFilter.pattern());
@@ -87,6 +93,7 @@ public class TextSqlNode implements SqlNode {
     }
   }
 
+  //动态SQL检查器
   private static class DynamicCheckerTokenParser implements TokenHandler {
 
     private boolean isDynamic;
@@ -101,6 +108,7 @@ public class TextSqlNode implements SqlNode {
 
     @Override
     public String handleToken(String content) {
+    	//非常简单，设置isDynamic为true，即调用了这个类就必定是动态sql？？？
       this.isDynamic = true;
       return null;
     }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,20 +15,23 @@
  */
 package org.apache.ibatis.reflection.wrapper;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
+ * Map包装器
+ *
  * @author Clinton Begin
  */
 public class MapWrapper extends BaseWrapper {
 
+  //原来的对象
   private final Map<String, Object> map;
 
   public MapWrapper(MetaObject metaObject, Map<String, Object> map) {
@@ -36,8 +39,10 @@ public class MapWrapper extends BaseWrapper {
     this.map = map;
   }
 
+  //get,set是允许的，
   @Override
   public Object get(PropertyTokenizer prop) {
+      //如果有index,说明是集合，那就要分解集合,调用的是BaseWrapper.resolveCollection 和 getCollectionValue
     if (prop.getIndex() != null) {
       Object collection = resolveCollection(prop, map);
       return getCollectionValue(prop, collection);

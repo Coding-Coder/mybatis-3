@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,13 +15,6 @@
  */
 package org.apache.ibatis.executor.statement;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
-
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
@@ -32,7 +25,12 @@ import org.apache.ibatis.mapping.ResultSetType;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+import java.sql.*;
+import java.util.List;
+
 /**
+ * 预处理语句处理器(PREPARED)
+ *
  * @author Clinton Begin
  */
 public class PreparedStatementHandler extends BaseStatementHandler {
@@ -43,6 +41,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
 
   @Override
   public int update(Statement statement) throws SQLException {
+    //调用PreparedStatement.execute和PreparedStatement.getUpdateCount
     PreparedStatement ps = (PreparedStatement) statement;
     ps.execute();
     int rows = ps.getUpdateCount();
@@ -61,7 +60,9 @@ public class PreparedStatementHandler extends BaseStatementHandler {
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
     PreparedStatement ps = (PreparedStatement) statement;
+    // 执行查询
     ps.execute();
+    // 通过结果处理器处理结果
     return resultSetHandler.handleResultSets(ps);
   }
 
@@ -72,8 +73,10 @@ public class PreparedStatementHandler extends BaseStatementHandler {
     return resultSetHandler.handleCursorResultSets(ps);
   }
 
+  //实例化创建一个Statement
   @Override
   protected Statement instantiateStatement(Connection connection) throws SQLException {
+    //调用Connection.prepareStatement
     String sql = boundSql.getSql();
     if (mappedStatement.getKeyGenerator() instanceof Jdbc3KeyGenerator) {
       String[] keyColumnNames = mappedStatement.getKeyColumns();
@@ -91,6 +94,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
 
   @Override
   public void parameterize(Statement statement) throws SQLException {
+    //调用ParameterHandler.setParameters
     parameterHandler.setParameters((PreparedStatement) statement);
   }
 

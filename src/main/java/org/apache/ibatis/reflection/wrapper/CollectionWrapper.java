@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,24 +15,28 @@
  */
 package org.apache.ibatis.reflection.wrapper;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
+import java.util.Collection;
+import java.util.List;
+
 /**
+ * Collection包装器
+ *
  * @author Clinton Begin
  */
 public class CollectionWrapper implements ObjectWrapper {
 
+  //原来的对象
   private final Collection<Object> object;
 
   public CollectionWrapper(MetaObject metaObject, Collection<Object> object) {
     this.object = object;
   }
 
+  //get,set都是不允许的,只能添加元素
   @Override
   public Object get(PropertyTokenizer prop) {
     throw new UnsupportedOperationException();

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2021 the original author or authors.
+ *    Copyright 2009-2022 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,15 +15,6 @@
  */
 package org.apache.ibatis.mapping;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.logging.Log;
@@ -31,7 +22,14 @@ import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.util.*;
+
 /**
+ * 结果映射
+ * MyBatis 中最重要最强大的元素
+ *
  * @author Clinton Begin
  */
 public class ResultMap {
@@ -53,6 +51,7 @@ public class ResultMap {
   private ResultMap() {
   }
 
+  //静态内部类，建造者模式
   public static class Builder {
     private static final Log log = LogFactory.getLog(Builder.class);
 
